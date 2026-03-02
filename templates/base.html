@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark" style="background-color: #212529;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CompanionBridge{% endblock %}</title>
+    
+    <!-- Favicon and App Icons -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='icon.png') }}">
+    <link rel="shortcut icon" type="image/png" href="{{ url_for('static', filename='icon.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon.png') }}">
+    <link rel="apple-touch-icon-precomposed" href="{{ url_for('static', filename='icon.png') }}">
+    
+    <!-- iOS Web App Configuration -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="CompanionBridge">
+    <meta name="theme-color" content="#000000">
+    <meta name="msapplication-TileColor" content="#000000">
+    
+    <!-- Open Graph Meta Tags for Link Sharing -->
+    <meta property="og:title" content="CompanionBridge">
+    <meta property="og:description" content="Transform your AI conversation history into comprehensive companion identity profiles with smart session analysis and optimized migration tools.">
+    <meta property="og:image" content="{{ url_for('static', filename='cover.png', _external=True) }}">
+    <meta property="og:type" content="website">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="CompanionBridge">
+    <meta name="twitter:description" content="Transform your AI conversation history into comprehensive companion identity profiles with smart session analysis and optimized migration tools.">
+    <meta name="twitter:image" content="{{ url_for('static', filename='cover.png', _external=True) }}">
+    
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+    
+    <!-- Ko-fi Overlay Widget Script -->
+    <script src='https://storage.ko-fi.com/cdn/scripts/overlay-widget.js'></script>
+</head>
+<body style="background-color: #212529; min-height: 100vh;">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
+                <img src="{{ url_for('static', filename='polyetherea-logo.png') }}" alt="Polyetherea Labs" style="height: 24px;" class="me-2">
+                <strong>CompanionBridge</strong>
+                <small class="text-muted ms-2 align-self-center" style="font-size: 0.75rem; line-height: 1; margin-top: 2px;">powered by Polyetherea Labs</small>
+            </a>
+        </div>
+    </nav>
+
+    <main class="container mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{% if category == 'error' %}danger{% else %}info{% endif %} alert-dismissible fade show" role="alert">
+                        <i class="bi bi-{% if category == 'error' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="bg-dark text-light text-center py-4 mt-5">
+        <div class="container">
+            <p class="mb-0">
+                <i class="bi bi-gear me-2"></i>
+                CompanionBridge v1.0 - AI-Inspired Identity Processing
+            </p>
+            <small class="text-muted">
+                Powered by TEE • CEFL • RRL • PCE • SSM Filters
+            </small>
+            <div class="mt-2">
+                <a href="https://discord.gg/5SzT974c" target="_blank" class="text-light text-decoration-none me-4">
+                    <i class="bi bi-discord me-1"></i>
+                    Join our Discord Community
+                </a>
+                <a href="https://ko-fi.com/A0A71JTD42" target="_blank" class="text-light text-decoration-none">
+                    <i class="bi bi-heart-fill me-1"></i>
+                    Support CompanionBridge
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    
+
+
+    
+
+
+</body>
+</html>

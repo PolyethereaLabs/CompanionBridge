@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}CompanionBridge{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-cloud-upload me-2"></i>
+                    Upload AI Companion Export Data
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">
+                    Transform your AI conversation history into comprehensive companion identity profiles with smart session analysis and optimized migration tools.
+                </p>
+                
+                <form action="{{ url_for('upload_files') }}" method="post" enctype="multipart/form-data" id="uploadForm">
+                    <!-- Identity Configuration Section -->
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3">
+                            <label for="user_name" class="form-label">Your First Name</label>
+                            <input type="text" class="form-control" id="user_name" name="user_name" 
+                                   placeholder="Your First Name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="companion_name" class="form-label">Companion First Name</label>
+                            <input type="text" class="form-control" id="companion_name" name="companion_name" 
+                                   placeholder="Companion's First Name" required>
+                        </div>
+                    </div>
+
+                    <!-- File Upload Section -->
+                    <div class="mb-4">
+                        <label for="conversations_file" class="form-label">
+                            <i class="bi bi-file-earmark-code me-2"></i>
+                            Interaction Data File
+                        </label>
+                        <input type="file" class="form-control" id="conversations_file" name="conversations_file" 
+                               accept=".json" required>
+                        <div class="form-text mt-2">
+                            Upload your <strong>conversations.json</strong> file from your AI platform data export (up to 100MB).
+                            <br><small class="text-warning">⚠️ Large files (50MB+) may take longer to process</small>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-center">
+                        <button type="submit" class="btn btn-primary btn-lg" id="uploadBtn">
+                            <i class="bi bi-upload me-2"></i>
+                            Upload & Select Conversations
+                        </button>
+                    </div>
+                    
+                    <!-- Progress container -->
+                    <div id="progressContainer" class="mt-4" style="display: none;">
+                        <div class="progress-wrapper">
+                            <!-- Progress content will be inserted here -->
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- How It Works -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    How It Works
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="fs-5">What You Get</h6>
+                        <ul class="list-unstyled small">
+                            <li>• <strong>Smart conversation selection:</strong> Sortable table with memory anchor previews</li>
+                            <li>• <strong>Two download options:</strong> Full detail + Condensed versions</li>
+                            <li>• <strong>Optimized AI Identity Traits:</strong> JSON format, copy-to-clipboard ready</li>
+                            <li>• <strong>Platform compatibility:</strong> Works with most AI platforms</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="fs-5">6-Section Identity Profile</h6>
+                        <ul class="list-unstyled small">
+                            <li><strong>Section 1:</strong> Memory anchors & factual references</li>
+                            <li><strong>Section 2:</strong> Your communication style analysis</li>
+                            <li><strong>Section 3:</strong> Relationship evolution timeline</li>
+                            <li><strong>Section 4:</strong> Personality traits & patterns</li>
+                            <li><strong>Section 5:</strong> Relational dynamics preferences</li>
+                            <li><strong>Section 6:</strong> Session conversation summaries</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-question-circle me-2"></i>
+                    How to Get Your Data Export
+                </h5>
+            </div>
+            <div class="card-body">
+                <ol class="small">
+                    <li>Go to your AI platform settings</li>
+                    <li>Navigate to "Data Controls" → "Export Data"</li>
+                    <li>Click "Export" and wait for the email</li>
+                    <li>Download and extract the ZIP file</li>
+                    <li>Upload only the <strong>conversations.json</strong> file here</li>
+                </ol>
+                
+                <div class="alert alert-info mt-3">
+                    <i class="bi bi-shield-check me-2"></i>
+                    <strong>Privacy:</strong> Files processed locally, automatically deleted after use. Your data never leaves our secure servers.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="text-center text-muted mt-5 py-4">
+    <small>&copy; 2025 CompanionBridge. Platform-neutral AI companion migration tools.</small>
+</footer>
+{% endblock %}

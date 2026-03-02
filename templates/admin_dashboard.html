@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics Dashboard - CompanionBridge{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2><i class="bi bi-graph-up me-2"></i>Analytics & Admin Dashboard</h2>
+            <a href="{{ url_for('admin_logout') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-box-arrow-right me-2"></i>Logout
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">{{ analytics.total_sessions }}</h4>
+                        <p class="mb-0">Total Sessions</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-file-earmark-code" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">{{ analytics.completed_sessions }}</h4>
+                        <p class="mb-0">Completed</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-check-circle" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">{{ analytics.total_conversations }}</h4>
+                        <p class="mb-0">Conversations</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-chat-dots" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">{{ analytics.avg_processing_time }}s</h4>
+                        <p class="mb-0">Avg Processing</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-stopwatch" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Daily Processing Activity</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="dailyChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Download Format Preferences</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="formatChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Popular Companion Names -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Popular Companion Names</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Count</th>
+                                <th>%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for name in analytics.popular_companion_names %}
+                            <tr>
+                                <td>{{ name.name }}</td>
+                                <td>{{ name.count }}</td>
+                                <td>{{ "%.1f"|format(name.percentage) }}%</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>File Size Distribution</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Size Range</th>
+                                <th>Count</th>
+                                <th>Avg Processing Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for size in analytics.file_size_distribution %}
+                            <tr>
+                                <td>{{ size.range }}</td>
+                                <td>{{ size.count }}</td>
+                                <td>{{ "%.1f"|format(size.avg_time) }}s</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Sessions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Recent Processing Sessions</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Session ID</th>
+                                <th>User Name</th>
+                                <th>Companion Name</th>
+                                <th>Status</th>
+                                <th>Conversations</th>
+                                <th>File Size</th>
+                                <th>Processing Time</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for session in recent_sessions %}
+                            <tr>
+                                <td><code>{{ session.session_id[:8] }}...</code></td>
+                                <td>{{ session.user_name }}</td>
+                                <td>{{ session.companion_name }}</td>
+                                <td>
+                                    {% if session.status == 'completed' %}
+                                        <span class="badge bg-success">{{ session.status }}</span>
+                                    {% elif session.status == 'error' %}
+                                        <span class="badge bg-danger">{{ session.status }}</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">{{ session.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ session.total_conversations }}</td>
+                                <td>{{ "%.1f"|format(session.file_size / 1024 / 1024) }} MB</td>
+                                <td>{{ "%.1f"|format(session.processing_time) }}s</td>
+                                <td>{{ session.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Status -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>System Health</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <strong>Database:</strong>
+                    <span class="badge bg-success">Connected</span>
+                </div>
+                <div class="mb-2">
+                    <strong>Processing Queue:</strong>
+                    <span class="badge bg-info">{{ analytics.active_sessions }} active</span>
+                </div>
+                <div class="mb-2">
+                    <strong>Error Rate (24h):</strong>
+                    <span class="badge {% if analytics.error_rate < 5 %}bg-success{% elif analytics.error_rate < 10 %}bg-warning{% else %}bg-danger{% endif %}">
+                        {{ "%.1f"|format(analytics.error_rate) }}%
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5>Memory Anchor Success Rate</h5>
+            </div>
+            <div class="card-body">
+                <div class="progress mb-2" style="height: 25px;">
+                    <div class="progress-bar bg-success" style="width: {{ analytics.memory_anchor_success_rate }}%">
+                        {{ "%.1f"|format(analytics.memory_anchor_success_rate) }}% Success Rate
+                    </div>
+                </div>
+                <small class="text-muted">
+                    Average {{ analytics.avg_memory_anchors }} memory anchors per session
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Daily Activity Chart
+const dailyCtx = document.getElementById('dailyChart').getContext('2d');
+new Chart(dailyCtx, {
+    type: 'line',
+    data: {
+        labels: {{ analytics.daily_labels | tojson }},
+        datasets: [{
+            label: 'Sessions',
+            data: {{ analytics.daily_data | tojson }},
+            borderColor: '#0d6efd',
+            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Format Preferences Chart
+const formatCtx = document.getElementById('formatChart').getContext('2d');
+new Chart(formatCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Full Version', 'Condensed Version', 'Both'],
+        datasets: [{
+            data: {{ analytics.format_data | tojson }},
+            backgroundColor: ['#198754', '#ffc107', '#0dcaf0']
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false
+    }
+});
+</script>
+
+{% endblock %}

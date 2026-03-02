@@ -1,0 +1,680 @@
+{% extends "base.html" %}
+
+{% block title %}Select Conversations - CompanionBridge{% endblock %}
+
+{% block content %}
+<style>
+.loading-dots::after {
+    content: '.';
+    animation: dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes dots {
+    0% { content: '.'; }
+    25% { content: '..'; }
+    50% { content: '...'; }
+    75% { content: '....'; }
+    100% { content: '.....'; }
+}
+
+.spinner-redirect {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h2 class="card-title mb-0">
+                    <i class="bi bi-check2-square me-2"></i>
+                    Select Conversations for Companion Identity Profile
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h5><i class="bi bi-file-earmark-text me-2"></i>Conversation Summary</h5>
+                        <ul class="list-unstyled">
+                            <li><strong>Identities:</strong> {{ user_name }} and {{ companion_name }}</li>
+                            <li><strong>Total Conversations:</strong> {{ summary.total_conversations }}</li>
+                            <li><strong>Total Messages:</strong> {{ "{:,}".format(summary.total_messages) }}</li>
+                            <li><strong>Date Range:</strong> {{ summary.date_range }}</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5><i class="bi bi-toggles me-2"></i>Selection Controls</h5>
+                        <div class="btn-group mb-2" role="group">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="selectAll()">
+                                <i class="bi bi-check-all me-1"></i>Select All
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="selectNone()">
+                                <i class="bi bi-x-square me-1"></i>Select None
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="selectTop10()">
+                                <i class="bi bi-star me-1"></i>Top 10 Only
+                            </button>
+                        </div>
+                        <div>
+                            <small class="text-muted">
+                                Selected: <span id="selectedCount">{{ summary.total_conversations }}</span> of {{ summary.total_conversations }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <form action="{{ url_for('generate_identity') }}" method="post" id="conversationForm">
+                    <input type="hidden" name="session_id" value="{{ session_id }}">
+                    <input type="hidden" name="user_name" value="{{ user_name }}">
+                    <input type="hidden" name="companion_name" value="{{ companion_name }}">
+                    
+                    <!-- Preview Instructions -->
+                    <div class="alert alert-info mb-3 py-2">
+                        <i class="bi bi-eye me-2"></i>
+                        <strong>Preview Conversations:</strong> Click any conversation title below to preview the chat content before making your selection.
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th width="50">
+                                        <input type="checkbox" id="selectAllCheckbox" onchange="toggleAll()" checked>
+                                    </th>
+                                    <th style="cursor: pointer;" onclick="sortTable('title')">
+                                        Title <i class="bi bi-arrow-down-up ms-1"></i>
+                                    </th>
+                                    <th width="120" style="cursor: pointer;" onclick="sortTable('date')">
+                                        Date <i class="bi bi-arrow-down-up ms-1"></i>
+                                    </th>
+                                    <th width="80" style="cursor: pointer;" onclick="sortTable('messages')">
+                                        Messages <i class="bi bi-arrow-down-up ms-1"></i>
+                                    </th>
+                                    <th width="80" style="cursor: pointer;" onclick="sortTable('words')">
+                                        Words <i class="bi bi-arrow-down-up ms-1"></i>
+                                    </th>
+                                    <th width="80" style="cursor: pointer;" onclick="sortTable('memories')">
+                                        Memories <i class="bi bi-arrow-down-up ms-1"></i>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for conv in summary.conversations %}
+                                <tr class="conversation-row" 
+                                    data-title="{{ conv.title }}"
+                                    data-date="{{ conv.create_time }}"
+                                    data-messages="{{ conv.message_count }}"
+                                    data-words="{{ conv.total_words }}"
+                                    data-memories="{{ conv.memory_anchors|default(0) }}">
+                                    <td>
+                                        <input type="checkbox" name="selected_conversations" 
+                                               value="{{ conv.id }}" class="conversation-checkbox" checked
+                                               onchange="updateSelectionCount()">
+                                    </td>
+                                    <td>
+                                        <a href="javascript:void(0)" class="conversation-title text-decoration-none fw-bold" 
+                                           data-conversation-id="{{ conv.id }}"
+                                           onclick="showConversationModal('{{ conv.id }}')">
+                                            {{ conv.title }}
+                                        </a>
+                                        {% if conv.message_count > 20 %}
+                                        <span class="badge bg-success ms-2">Rich</span>
+                                        {% elif conv.message_count > 10 %}
+                                        <span class="badge bg-primary ms-2">Good</span>
+                                        {% elif conv.message_count < 5 %}
+                                        <span class="badge bg-secondary ms-2">Brief</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ conv.date }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ conv.message_count }}</span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ "{:,}".format(conv.total_words) }}</small>
+                                    </td>
+                                    <td>
+                                        {% if conv.memory_anchors and conv.memory_anchors > 0 %}
+                                            <span class="badge bg-warning">{{ conv.memory_anchors }}</span>
+                                        {% else %}
+                                            <span class="text-muted">0</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-success btn-lg" id="generateBtn">
+                            <i class="bi bi-file-earmark-arrow-down me-2"></i>
+                            Generate Companion Identity Profile
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Generation Progress Section -->
+                <div id="generationProgress" class="mt-4" style="display: none;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">
+                                <i class="bi bi-gear-fill me-2 spinner"></i>
+                                <span id="progressTitle">Generating Identity Profile</span>
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="progress mb-3" style="height: 25px;">
+                                <div id="generationProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                    0%
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted" id="currentStage">Initializing analysis...</small>
+                                <small class="text-muted" id="estimatedTime">Estimated: 2-3 minutes</small>
+                            </div>
+                            <div class="mt-3">
+                                <div class="row text-center">
+                                    <div class="col-2">
+                                        <div id="stage1" class="stage-indicator">
+                                            <i class="bi bi-circle"></i>
+                                            <small>Memory</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-2">
+                                        <div id="stage2" class="stage-indicator">
+                                            <i class="bi bi-circle"></i>
+                                            <small>Profile</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-2">
+                                        <div id="stage3" class="stage-indicator">
+                                            <i class="bi bi-circle"></i>
+                                            <small>Dynamics</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-2">
+                                        <div id="stage4" class="stage-indicator">
+                                            <i class="bi bi-circle"></i>
+                                            <small>Traits</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-2">
+                                        <div id="stage5" class="stage-indicator">
+                                            <i class="bi bi-circle"></i>
+                                            <small>Relations</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-2">
+                                        <div id="stage6" class="stage-indicator">
+                                            <i class="bi bi-circle"></i>
+                                            <small>History</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Conversation Modal -->
+                <div class="modal fade" id="conversationModal" tabindex="-1" aria-labelledby="conversationModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="conversationModalLabel">Conversation Review</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body" id="conversationModalBody">
+                                <div class="d-flex justify-content-center">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info mt-4">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Tips:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>Select conversations that best represent your personality and communication style</li>
+                        <li>Rich conversations (20+ messages) provide more detailed personality data</li>
+                        <li>Brief conversations may still contain important context or memories</li>
+                        <li>The generated profile will include ALL COMPLETE conversations you select (not excerpts)</li>
+                        <li>Click column headers to sort conversations (Title, Date, Messages, Words)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateSelectionCount() {
+    const checkboxes = document.querySelectorAll('.conversation-checkbox');
+    const selectedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+    document.getElementById('selectedCount').textContent = selectedCount;
+    
+    // Update select all checkbox state
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    selectAllCheckbox.checked = selectedCount === checkboxes.length;
+    selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < checkboxes.length;
+    
+    // Update generate button
+    const generateBtn = document.getElementById('generateBtn');
+    generateBtn.disabled = selectedCount === 0;
+    if (selectedCount === 0) {
+        generateBtn.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>Please select at least one conversation';
+    } else {
+        generateBtn.innerHTML = `<i class="bi bi-file-earmark-arrow-down me-2"></i>Generate Companion Identity Profile from ${selectedCount} Selected Conversations`;
+    }
+}
+
+function toggleAll() {
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const checkboxes = document.querySelectorAll('.conversation-checkbox');
+    checkboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
+    updateSelectionCount();
+}
+
+function selectAll() {
+    const checkboxes = document.querySelectorAll('.conversation-checkbox');
+    checkboxes.forEach(cb => cb.checked = true);
+    document.getElementById('selectAllCheckbox').checked = true;
+    updateSelectionCount();
+}
+
+function selectNone() {
+    const checkboxes = document.querySelectorAll('.conversation-checkbox');
+    checkboxes.forEach(cb => cb.checked = false);
+    document.getElementById('selectAllCheckbox').checked = false;
+    updateSelectionCount();
+}
+
+function selectTop10() {
+    selectNone();
+    const rows = Array.from(document.querySelectorAll('.conversation-row'));
+    // Sort by message count (descending)
+    rows.sort((a, b) => parseInt(b.dataset.messages) - parseInt(a.dataset.messages));
+    
+    // Select top 10
+    for (let i = 0; i < Math.min(10, rows.length); i++) {
+        const checkbox = rows[i].querySelector('.conversation-checkbox');
+        checkbox.checked = true;
+    }
+    updateSelectionCount();
+}
+
+let sortDirection = {};
+
+function sortTable(column) {
+    const tbody = document.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('.conversation-row'));
+    
+    // Toggle sort direction for this column
+    sortDirection[column] = !sortDirection[column];
+    const ascending = sortDirection[column];
+    
+    // Sort rows based on column
+    rows.sort((a, b) => {
+        let aValue, bValue;
+        
+        switch(column) {
+            case 'title':
+                aValue = a.dataset.title.toLowerCase();
+                bValue = b.dataset.title.toLowerCase();
+                return ascending 
+                    ? aValue.localeCompare(bValue)
+                    : bValue.localeCompare(aValue);
+                    
+            case 'date':
+                aValue = parseInt(a.dataset.date) || 0;
+                bValue = parseInt(b.dataset.date) || 0;
+                return ascending ? aValue - bValue : bValue - aValue;
+                
+            case 'messages':
+                aValue = parseInt(a.dataset.messages) || 0;
+                bValue = parseInt(b.dataset.messages) || 0;
+                return ascending ? aValue - bValue : bValue - aValue;
+                
+            case 'words':
+                aValue = parseInt(a.dataset.words) || 0;
+                bValue = parseInt(b.dataset.words) || 0;
+                return ascending ? aValue - bValue : bValue - aValue;
+                
+            case 'memories':
+                aValue = parseInt(a.dataset.memories) || 0;
+                bValue = parseInt(b.dataset.memories) || 0;
+                return ascending ? aValue - bValue : bValue - aValue;
+                
+            default:
+                return 0;
+        }
+    });
+    
+    // Clear tbody and re-append sorted rows
+    tbody.innerHTML = '';
+    rows.forEach(row => tbody.appendChild(row));
+    
+    // Update sort indicators in headers
+    updateSortIndicators(column, ascending);
+}
+
+function updateSortIndicators(activeColumn, ascending) {
+    // Reset all headers
+    document.querySelectorAll('th[onclick]').forEach(th => {
+        const icon = th.querySelector('i');
+        if (icon) {
+            icon.className = 'bi bi-arrow-down-up ms-1';
+        }
+    });
+    
+    // Update active column header
+    const activeHeader = document.querySelector(`th[onclick="sortTable('${activeColumn}')"]`);
+    if (activeHeader) {
+        const icon = activeHeader.querySelector('i');
+        if (icon) {
+            icon.className = ascending 
+                ? 'bi bi-arrow-up ms-1' 
+                : 'bi bi-arrow-down ms-1';
+        }
+    }
+}
+
+function showConversationModal(conversationId) {
+    const modal = new bootstrap.Modal(document.getElementById('conversationModal'));
+    const modalBody = document.getElementById('conversationModalBody');
+    const modalTitle = document.getElementById('conversationModalLabel');
+    
+    // Show loading spinner
+    modalBody.innerHTML = `
+        <div class="d-flex justify-content-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    `;
+    
+    modal.show();
+    
+    // Fetch conversation data
+    fetch(`/conversation/${conversationId}?session_id={{ session_id }}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                modalTitle.textContent = data.conversation.title;
+                modalBody.innerHTML = formatConversationMessages(data.conversation.messages);
+            } else {
+                modalBody.innerHTML = `<div class="alert alert-danger">Error loading conversation: ${data.error}</div>`;
+            }
+        })
+        .catch(error => {
+            modalBody.innerHTML = `<div class="alert alert-danger">Error loading conversation: ${error.message}</div>`;
+        });
+}
+
+function formatConversationMessages(messages) {
+    const userName = '{{ user_name }}';
+    const companionName = '{{ companion_name }}';
+    
+    let html = '<div class="conversation-messages" style="max-height: 500px; overflow-y: auto;">';
+    
+    messages.forEach(message => {
+        const isUser = message.author === 'user';
+        const senderName = isUser ? userName : companionName;
+        const bgClass = isUser ? 'bg-light border-start border-primary border-3' : 'bg-success bg-opacity-10 border-start border-success border-3';
+        
+        html += `
+            <div class="message mb-3 p-3 rounded ${bgClass}">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <strong class="${isUser ? 'text-primary' : 'text-success'}">${senderName}</strong>
+                    ${message.create_time ? `<small class="text-muted">${new Date(message.create_time * 1000).toLocaleString()}</small>` : ''}
+                </div>
+                <div class="message-content">
+                    ${message.content || 'No content'}
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    return html;
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    updateSelectionCount();
+    
+    // Add generate button loading feedback
+    const conversationForm = document.getElementById('conversationForm');
+    const generateBtn = document.getElementById('generateBtn');
+    
+    conversationForm.addEventListener('submit', function(e) {
+        // Prevent immediate form submission
+        e.preventDefault();
+        
+        const selectedCount = document.querySelectorAll('.conversation-checkbox:checked').length;
+        
+        if (selectedCount === 0) {
+            showNotification('Please select at least one conversation to generate the identity profile.', 'warning');
+            return;
+        }
+        
+        // Show detailed progress visualization
+        showGenerationProgress();
+        
+        // Form will be submitted automatically when progress reaches 100%
+        // No fixed timeout needed
+    });
+});
+
+function showGenerationProgress() {
+    const generateBtn = document.getElementById('generateBtn');
+    const progressSection = document.getElementById('generationProgress');
+    
+    // Update button state
+    generateBtn.innerHTML = '<i class="bi bi-hourglass-split me-2 spinner"></i>Processing...';
+    generateBtn.disabled = true;
+    
+    // Show progress section
+    progressSection.style.display = 'block';
+    
+    // Scroll to progress section
+    progressSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    
+    // Start progress simulation
+    simulateGenerationProgress();
+}
+
+function simulateGenerationProgress() {
+    console.log('🔄 Starting progress simulation - VERSION 3.0 - CACHE BUSTER');
+    const progressBar = document.getElementById('generationProgressBar');
+    const currentStage = document.getElementById('currentStage');
+    const progressTitle = document.getElementById('progressTitle');
+    const estimatedTime = document.getElementById('estimatedTime');
+    
+    const stages = [
+        { 
+            progress: 15, 
+            message: 'Analyzing personality & memory anchors...', 
+            title: 'Section 1: Memory Analysis',
+            stage: 'stage1',
+            time: '2-3 minutes'
+        },
+        { 
+            progress: 30, 
+            message: 'Building user profile analysis...', 
+            title: 'Section 2: User Profile',
+            stage: 'stage2',
+            time: '1-2 minutes'
+        },
+        { 
+            progress: 50, 
+            message: 'Mapping relational dynamics evolution...', 
+            title: 'Section 3: Relationship Evolution',
+            stage: 'stage3',
+            time: '1-2 minutes'
+        },
+        { 
+            progress: 65, 
+            message: 'Identifying emotional & personality traits...', 
+            title: 'Section 4: Personality Traits',
+            stage: 'stage4',
+            time: '1 minute'
+        },
+        { 
+            progress: 80, 
+            message: 'Analyzing preferred relational dynamics...', 
+            title: 'Section 5: Relational Preferences',
+            stage: 'stage5',
+            time: '30 seconds'
+        },
+        { 
+            progress: 95, 
+            message: 'Compiling conversation history...', 
+            title: 'Section 6: Conversation Data',
+            stage: 'stage6',
+            time: 'Almost done!'
+        },
+        { 
+            progress: 100, 
+            message: 'Identity profile complete! Redirecting...', 
+            title: 'Generation Complete',
+            stage: null,
+            time: 'Processing...'
+        }
+    ];
+    
+    let currentStageIndex = 0;
+    
+    function updateProgress() {
+        if (currentStageIndex < stages.length) {
+            const stage = stages[currentStageIndex];
+            
+            // Update progress bar with explicit 100% handling
+            progressBar.style.width = stage.progress + '%';
+            progressBar.textContent = stage.progress + '%';
+            progressBar.setAttribute('aria-valuenow', stage.progress);
+            
+            // Debug logging for all stages
+            console.log(`Progress stage: ${stage.progress}%`);
+            
+            // Force visual update for 100% case
+            if (stage.progress === 100) {
+                progressBar.style.width = '100%';
+                progressBar.classList.remove('progress-bar-animated');
+                progressBar.classList.add('bg-success');
+            }
+            
+            // Update text content with HTML support for animations
+            currentStage.innerHTML = stage.message;
+            progressTitle.textContent = stage.title;
+            estimatedTime.innerHTML = `Estimated: ${stage.time}`;
+            
+            // Update stage indicators
+            if (stage.stage) {
+                const stageElement = document.getElementById(stage.stage);
+                if (stageElement) {
+                    stageElement.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i><small>' + 
+                                           stageElement.querySelector('small').textContent + '</small>';
+                }
+            }
+            
+            currentStageIndex++;
+            
+            // ENSURE VISUAL 100% COMPLETION BEFORE REDIRECTING
+            if (stage.progress === 100) {
+                console.log('🚀 PROGRESS REACHED 100% - COMPLETING VISUAL UPDATE');
+                
+                // FORCE COMPLETE VISUAL UPDATE - OVERRIDE ALL STYLING
+                progressBar.style.width = '100%';
+                progressBar.style.backgroundColor = '#198754'; // Force green background
+                progressBar.textContent = '100%';
+                progressBar.classList.remove('progress-bar-striped', 'progress-bar-animated');
+                progressBar.classList.add('bg-success');
+                
+                // Force immediate DOM update
+                progressBar.offsetHeight; // Trigger reflow
+                
+                // Allow visual update to render, then show redirecting animation
+                setTimeout(() => {
+                    currentStage.innerHTML = stage.message + ' <div class="spinner-border spinner-border-sm ms-2" role="status"><span class="visually-hidden">Loading...</span></div>';
+                    estimatedTime.textContent = ''; // Clear estimated time during processing
+                    
+                    // Submit form after visual updates complete
+                    document.getElementById('conversationForm').submit();
+                }, 150); // Short delay to ensure 100% bar is visible before redirecting animation
+                
+                return; // Stop the progress loop
+            }
+            
+            // Vary timing based on stage complexity
+            let delay = 1000; // Default 1 second
+            if (currentStageIndex <= 2) delay = 800;  // Faster start
+            if (currentStageIndex === 3) delay = 1500; // Slower for complex analysis
+            if (currentStageIndex >= 6) delay = 500;   // Quick finish
+            
+            setTimeout(updateProgress, delay);
+        }
+    }
+    
+    updateProgress();
+}
+
+function showNotification(message, type = 'info') {
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show mt-3`;
+    alert.innerHTML = `
+        <i class="bi bi-info-circle me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const cardBody = document.querySelector('.card-body');
+    if (cardBody) {
+        cardBody.insertBefore(alert, cardBody.firstChild);
+    }
+}
+</script>
+
+<style>
+.stage-indicator {
+    text-align: center;
+    margin-bottom: 0.5rem;
+}
+
+.stage-indicator i {
+    display: block;
+    font-size: 1.2rem;
+    margin-bottom: 0.25rem;
+    color: #6c757d;
+}
+
+.stage-indicator small {
+    display: block;
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}

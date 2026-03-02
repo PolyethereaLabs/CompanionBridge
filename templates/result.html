@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+
+{% block title %}Results - CompanionBridge{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h2 class="card-title mb-0">
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                    Companion Identity Profile Generated Successfully
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-success">
+                    <i class="bi bi-download me-2"></i>
+                    {% if session.companion_name %}
+                        Your companion identity file for <strong>{{ session.companion_name }}</strong> has been generated and is ready for download!
+                    {% else %}
+                        Your companion identity file has been generated and is ready for download!
+                    {% endif %}
+                </div>
+
+                <div class="d-grid gap-2 mb-4">
+                    <a href="{{ url_for('download_result', session_id=session.session_id) }}" 
+                       class="btn btn-primary btn-lg">
+                        <i class="bi bi-download me-2"></i>
+                        {% if session.companion_name %}
+                            Download {{ session.companion_name }} Companion Identity Profile
+                        {% else %}
+                            Download Companion Identity Profile
+                        {% endif %}
+                    </a>
+                    <a href="{{ url_for('download_condensed_result', session_id=session.session_id) }}" 
+                       class="btn btn-outline-primary btn-lg">
+                        <i class="bi bi-file-earmark-zip me-2"></i>
+                        {% if session.companion_name %}
+                            Download {{ session.companion_name }} Condensed Profile (Transcript-Free)
+                        {% else %}
+                            Download Condensed Profile (Transcript-Free)
+                        {% endif %}
+                    </a>
+                </div>
+
+                <!-- Version Comparison -->
+                <div class="alert alert-info mb-4">
+                    <h6 class="alert-heading mb-2">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Download Options Explained
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Full Identity Profile:</strong>
+                            <ul class="mb-0 mt-1">
+                                <li>Complete personality analysis</li>
+                                <li>User profile insights</li>
+                                <li>Relational dynamics</li>
+                                <li>Full conversation history</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Condensed Profile (Transcript-Free):</strong>
+                            <ul class="mb-0 mt-1">
+                                <li>Same personality analysis</li>
+                                <li>Same user profile insights</li>
+                                <li>Same relational dynamics</li>
+                                <li><em>No conversation history</em></li>
+                                <li>Optimized for &lt;30K token weight</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <hr class="my-2">
+                    <small class="text-muted">
+                        <strong>Choose condensed if:</strong> Your AI platform has token limits or you prefer a more focused identity file without chat transcripts.
+                    </small>
+                </div>
+
+                <!-- Processing Statistics -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-bar-chart me-2"></i>
+                                    Processing Statistics
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <div class="border-end">
+                                            <h4 class="text-primary mb-0">{{ session.total_conversations }}</h4>
+                                            <small class="text-muted">Conversations Selected</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <h4 class="text-info mb-0">{{ session.total_messages }}</h4>
+                                        <small class="text-muted">Messages Saved</small>
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <div class="border-end">
+                                            <h4 class="text-warning mb-0">{{ session.traits_extracted or 0 }}</h4>
+                                            <small class="text-muted">Traits Recognized</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <h4 class="text-success mb-0">{{ session.memories_indexed }}</h4>
+                                        <small class="text-muted">Memories Saved</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    Session Details
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                {% if session.companion_name %}
+                                <p class="mb-2">
+                                    <strong>Companion Name:</strong><br>
+                                    <span class="badge bg-primary">{{ session.companion_name }}</span>
+                                </p>
+                                {% endif %}
+                                <p class="mb-2">
+                                    <strong>Session ID:</strong><br>
+                                    <code>{{ session.session_id }}</code>
+                                </p>
+                                <p class="mb-2">
+                                    <strong>Processed:</strong><br>
+                                    {{ session.completed_at.strftime('%Y-%m-%d %H:%M:%S') if session.completed_at else 'N/A' }}
+                                </p>
+                                <p class="mb-0">
+                                    <strong>Files:</strong><br>
+                                    <small class="text-muted">
+                                        {{ session.chat_filename }}<br>
+                                        {{ session.conversations_filename }}
+                                    </small>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Optimized Traits Instructions for AI Migration -->
+                {% if optimized_traits_json %}
+                <div class="card mt-4 bg-light border-success">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0">
+                            <i class="bi bi-robot me-2"></i>
+                            Optimized Traits Instructions for AI Migration
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-3 text-muted">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Copy this optimized JSON to quickly configure your AI companion on any platform. 
+                            This contains the essential personality traits and interaction preferences extracted from your conversations.
+                        </p>
+                        
+                        <div class="border rounded p-3 bg-white position-relative">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <small class="text-muted">Optimized Configuration JSON ({{ optimized_traits_json|length }} characters)</small>
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="copyTraitsBtn" 
+                                        onclick="copyTraitsToClipboard()" title="Copy to Clipboard">
+                                    <i class="bi bi-clipboard me-1"></i>Copy to Clipboard
+                                </button>
+                            </div>
+                            <textarea id="optimizedTraitsJson" class="form-control font-monospace" 
+                                      style="height: 200px; resize: vertical; font-size: 0.9em;" 
+                                      readonly>{{ optimized_traits_json }}</textarea>
+                        </div>
+                        
+                        <div class="alert alert-info mt-3 mb-0">
+                            <i class="bi bi-lightbulb me-2"></i>
+                            <strong>Quick Setup:</strong> Most AI platforms support JSON import for personality configuration. 
+                            Paste this into your platform's character/personality settings to replicate the relationship dynamics from your conversations.
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Processing Methods Applied -->
+                <div class="card mt-4 bg-light">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="bi bi-cpu me-2"></i>
+                            Processing Methods Applied
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <ul class="list-unstyled mb-0">
+                                    <li class="mb-2">
+                                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                        <strong>Memory Anchor Detection</strong>
+                                        <br><small class="text-muted">Identifies factual statements about the user</small>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-md-4">
+                                <ul class="list-unstyled mb-0">
+                                    <li class="mb-2">
+                                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                        <strong>Trait Recognition</strong>
+                                        <br><small class="text-muted">Analyzes emotional and personality patterns</small>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-md-4">
+                                <ul class="list-unstyled mb-0">
+                                    <li class="mb-2">
+                                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                        <strong>Conversation Filtering</strong>
+                                        <br><small class="text-muted">Selects relevant chat content for analysis</small>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Usage Instructions -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="bi bi-book me-2"></i>
+                            How to Use Your Identity File
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <ol class="mb-0">
+                            <li>Download the generated identity file</li>
+                            <li>Open your preferred AI companion platform</li>
+                            <li>Look for character/personality customization options</li>
+                            <li>Upload or paste the content from the identity file</li>
+                            <li>Fine-tune any additional settings as needed</li>
+                        </ol>
+                        
+                        <div class="alert alert-info mt-3 mb-0">
+                            <i class="bi bi-lightbulb me-2"></i>
+                            <strong>Tip:</strong> The identity file contains structured data that most modern AI platforms can interpret. 
+                            If your platform doesn't support file uploads, you can copy and paste the relevant sections.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>
+                        Process Another Export
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if optimized_traits_json %}
+<script>
+function copyTraitsToClipboard() {
+    const textarea = document.getElementById('optimizedTraitsJson');
+    const button = document.getElementById('copyTraitsBtn');
+    
+    // Select and copy the text
+    textarea.select();
+    textarea.setSelectionRange(0, 99999); // For mobile devices
+    
+    try {
+        // Try using the modern clipboard API first
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(textarea.value).then(function() {
+                showCopyFeedback(button, true);
+            }).catch(function() {
+                // Fallback to legacy method
+                fallbackCopy(textarea, button);
+            });
+        } else {
+            // Fallback to legacy method
+            fallbackCopy(textarea, button);
+        }
+    } catch (err) {
+        console.error('Failed to copy text: ', err);
+        showCopyFeedback(button, false);
+    }
+}
+
+function fallbackCopy(textarea, button) {
+    try {
+        document.execCommand('copy');
+        showCopyFeedback(button, true);
+    } catch (err) {
+        console.error('Fallback copy failed: ', err);
+        showCopyFeedback(button, false);
+    }
+}
+
+function showCopyFeedback(button, success) {
+    const originalContent = button.innerHTML;
+    
+    if (success) {
+        button.innerHTML = '<i class="bi bi-check-circle me-1"></i>Copied!';
+        button.classList.remove('btn-outline-primary');
+        button.classList.add('btn-success');
+    } else {
+        button.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i>Failed';
+        button.classList.remove('btn-outline-primary');
+        button.classList.add('btn-danger');
+    }
+    
+    // Reset button after 2 seconds
+    setTimeout(function() {
+        button.innerHTML = originalContent;
+        button.classList.remove('btn-success', 'btn-danger');
+        button.classList.add('btn-outline-primary');
+    }, 2000);
+}
+</script>
+{% endif %}
+
+{% endblock %}
