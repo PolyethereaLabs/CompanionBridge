@@ -78,6 +78,10 @@ attached_assets/
 .npm
 .yarn-integrity
 
-# Local development / Replit agent state
+# Replit files — not needed outside Replit
 .local/
 .replit
+replit.md
+replit.nix
+.replit.nix
+.upm/
