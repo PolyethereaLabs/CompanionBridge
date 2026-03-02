@@ -50,9 +50,15 @@ with app.app_context():
     # Create default admin user if none exists
     from models import AdminUser
     if AdminUser.query.count() == 0:
+        admin_password = os.environ.get("ADMIN_PASSWORD")
+        if not admin_password:
+            raise RuntimeError(
+                "ADMIN_PASSWORD environment variable is not set. "
+                "Please set it before starting the application."
+            )
         admin = AdminUser()
         admin.username = 'admin'
-        admin.set_password('companion2025')  # Default password - should be changed
+        admin.set_password(admin_password)
         db.session.add(admin)
         db.session.commit()
-        print("Created default admin user: admin/companion2025")
+        print("Created default admin user: admin")
